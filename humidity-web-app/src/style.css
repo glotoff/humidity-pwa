@@ -60,7 +60,7 @@ body {
   max-width: 480px;
   margin: 0 auto;
   min-height: 100vh;
-  padding: 24px 20px 40px 20px;
+  padding: 24px 20px 80px 20px;
   background: linear-gradient(to bottom, var(--color-bg-start), var(--color-bg-mid), var(--color-bg-end));
   display: flex;
   flex-direction: column;
