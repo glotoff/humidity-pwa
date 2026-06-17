@@ -3,9 +3,13 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -60,3 +64,13 @@ jobs:
           name: relative-humidity-app
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ github.ref_name }} \
+            --title "Atmosphere ${{ github.ref_name }}" \
+            --notes "Automated release of Atmosphere Relative Humidity App APK for version ${{ github.ref_name }}." \
+            app/build/outputs/apk/debug/app-debug.apk
