@@ -1,0 +1,62 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build PWA & Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-size: 20
+          cache: 'npm'
+          cache-dependency-path: 'humidity-web-app/package-lock.json'
+
+      - name: Install Node Dependencies
+        working-directory: humidity-web-app
+        run: npm ci
+
+      - name: Build Vite PWA
+        working-directory: humidity-web-app
+        run: npm run build
+
+      - name: Setup Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x gradlew
+
+      - name: Prepare Android Assets Directory
+        run: |
+          rm -rf app/src/main/assets/*
+          mkdir -p app/src/main/assets
+
+      - name: Copy Built PWA Assets to Android Project
+        run: cp -r humidity-web-app/dist/* app/src/main/assets/
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: relative-humidity-app
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
