@@ -65,12 +65,22 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7
 
-      - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Create or Update GitHub Release
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ github.ref_name }} \
-            --title "Atmosphere ${{ github.ref_name }}" \
-            --notes "Automated release of Atmosphere Relative Humidity App APK for version ${{ github.ref_name }}." \
-            app/build/outputs/apk/debug/app-debug.apk
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            # Release for a specific version tag
+            gh release create "${{ github.ref_name }}" \
+              --title "Atmosphere ${{ github.ref_name }}" \
+              --notes "Automated release of Atmosphere Relative Humidity App APK for version ${{ github.ref_name }}." \
+              app/build/outputs/apk/debug/app-debug.apk
+          elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            # Rolling release for push/merge to the main branch
+            gh release upload latest app/build/outputs/apk/debug/app-debug.apk --clobber || \
+            gh release create latest app/build/outputs/apk/debug/app-debug.apk \
+              --title "Latest Pre-release" \
+              --notes "Automated rolling pre-release from the latest commit on the main branch. Download the raw APK file below." \
+              --prerelease
+          fi
